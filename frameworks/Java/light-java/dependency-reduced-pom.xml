@@ -137,7 +137,7 @@
     </dependency>
   </dependencies>
   <properties>
-    <version.hikaricp>2.6.1</version.hikaricp>
+    <version.agroal>0.2</version.agroal>
     <version.httpasyncclient>4.1.2</version.httpasyncclient>
     <version.commons.codec>1.10</version.commons.codec>
     <version.jsonpath>2.2.0</version.jsonpath>

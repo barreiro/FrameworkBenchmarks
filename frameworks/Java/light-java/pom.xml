@@ -36,7 +36,7 @@
         <version.httpclient>4.5.2</version.httpclient>
         <version.httpasyncclient>4.1.2</version.httpasyncclient>
         <version.swagger>1.5.10</version.swagger>
-        <version.hikaricp>2.6.1</version.hikaricp>
+        <version.agroal>0.2</version.agroal>
         <version.mysql>5.1.41</version.mysql>
         <version.postgres>42.1.1</version.postgres>
     </properties>
@@ -84,14 +84,20 @@
             <version>${version.logback}</version>
         </dependency>
         <dependency>
+            <groupId>io.agroal</groupId>
+            <artifactId>agroal-api</artifactId>
+            <version>${version.agroal}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.agroal</groupId>
+            <artifactId>agroal-pool</artifactId>
+            <version>${version.agroal}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
             <groupId>io.undertow</groupId>
             <artifactId>undertow-core</artifactId>
             <version>${version.undertow}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-            <version>${version.hikaricp}</version>
         </dependency>
         <dependency>
             <groupId>mysql</groupId>

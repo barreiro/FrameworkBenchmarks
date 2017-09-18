@@ -2,7 +2,12 @@ package com.networknt.techempower.db.mysql;
 
 import com.networknt.config.Config;
 import com.networknt.server.StartupHookProvider;
-import com.zaxxer.hikari.HikariDataSource;
+import io.agroal.api.AgroalDataSource;
+import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
+import io.agroal.api.security.NamePrincipal;
+import io.agroal.api.security.SimplePassword;
+
+import java.sql.SQLException;
 
 /**
  * Created by steve on 10/02/17.
@@ -10,7 +15,7 @@ import com.zaxxer.hikari.HikariDataSource;
 public class MysqlStartupHookProvider implements StartupHookProvider {
 
     static String CONFIG_NAME = "mysql";
-    public static HikariDataSource ds;
+    public static AgroalDataSource ds;
 
     @Override
     public void onStartup() {
@@ -18,16 +23,30 @@ public class MysqlStartupHookProvider implements StartupHookProvider {
     }
 
     static void initDataSource() {
-        MysqlConfig config = (MysqlConfig) Config.getInstance().getJsonObjectConfig(CONFIG_NAME, MysqlConfig.class);
-        ds = new HikariDataSource();
-        ds.setJdbcUrl(config.getJdbcUrl());
-        ds.setUsername(config.getUsername());
-        ds.setPassword(config.getPassword());
-        ds.setMaximumPoolSize(config.getMaximumPoolSize());
-        ds.addDataSourceProperty("useServerPrepStmts", config.isUseServerPrepStmts());
-        ds.addDataSourceProperty("CachePrepStmts", config.isCachePrepStmts());
-        ds.addDataSourceProperty("CacheCallableStmts", config.isCacheCallableStmts());
-        ds.addDataSourceProperty("PrepStmtCacheSize", config.getPrepStmtCacheSize());
-        ds.addDataSourceProperty("PrepStmtCacheSqlLimit", config.getPrepStmtCacheSqlLimit());
+        MysqlConfig config = (MysqlConfig) Config.getInstance().getJsonObjectConfig( CONFIG_NAME, MysqlConfig.class );
+
+        AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
+                .connectionPoolConfiguration( cp -> cp
+                        .maxSize( config.getMaximumPoolSize() )
+                        .connectionFactoryConfiguration( cf -> cf
+                                .driverClassName( "com.mysql.jdbc.Driver" ) // AG-29
+                                .jdbcUrl( config.getJdbcUrl() )
+                                .principal( new NamePrincipal( config.getUsername() ) )
+                                .credential( new SimplePassword( config.getPassword() ) )
+
+                                .jdbcProperty( "useServerPrepStmts", "" + config.isUseServerPrepStmts() )
+                                .jdbcProperty( "CachePrepStmts", "" + config.isCachePrepStmts() )
+                                .jdbcProperty( "CacheCallableStmts", "" + config.isCacheCallableStmts() )
+                                .jdbcProperty( "PrepStmtCacheSize", "" + config.getPrepStmtCacheSize() )
+                                .jdbcProperty( "PrepStmtCacheSqlLimit", "" + config.getPrepStmtCacheSqlLimit() )
+                        )
+                );
+
+        try {
+            ds = AgroalDataSource.from( configuration );
+        }
+        catch ( SQLException e ) {
+            // ignore
+        }
     }
 }
