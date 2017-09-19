@@ -13,7 +13,7 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <version.hikaricp>2.6.1</version.hikaricp>
+    <version.agroal>0.2</version.agroal>
     <version.jackson>2.8.8.1</version.jackson>
     <version.maven-shade-plugin>3.0.0</version.maven-shade-plugin>
     <version.mongodb>3.4.2</version.mongodb>
@@ -64,9 +64,15 @@
       <version>${version.mongodb}</version>
     </dependency>
     <dependency>
-      <groupId>com.zaxxer</groupId>
-      <artifactId>HikariCP</artifactId>
-      <version>${version.hikaricp}</version>
+      <groupId>io.agroal</groupId>
+      <artifactId>agroal-api</artifactId>
+      <version>${version.agroal}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.agroal</groupId>
+      <artifactId>agroal-pool</artifactId>
+      <version>${version.agroal}</version>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>

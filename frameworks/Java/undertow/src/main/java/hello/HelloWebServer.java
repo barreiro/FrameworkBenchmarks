@@ -9,18 +9,22 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.connection.ClusterConnectionMode;
 import com.mongodb.connection.ClusterSettings;
 import com.mongodb.connection.ConnectionPoolSettings;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
+import io.agroal.api.AgroalDataSource;
+import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
+import io.agroal.api.security.NamePrincipal;
+import io.agroal.api.security.SimplePassword;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.SetHeaderHandler;
+
+import javax.sql.DataSource;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Properties;
-import javax.sql.DataSource;
 
 /**
  * Provides the {@link #main(String[])} method, which launches the application.
@@ -75,11 +79,12 @@ public final class HelloWebServer {
     MYSQL() {
       @Override
       HttpHandler paths(Properties props) {
+        String driverClass = "com.mysql.jdbc.Driver";
         String jdbcUrl = props.getProperty("mysql.jdbcUrl");
         String username = props.getProperty("mysql.username");
         String password = props.getProperty("mysql.password");
         int connections = Integer.parseInt(props.getProperty("mysql.connections"));
-        DataSource db = newSqlDataSource(jdbcUrl, username, password, connections);
+        DataSource db = newSqlDataSource(driverClass, jdbcUrl, username, password, connections);
         return new PathHandler()
             .addExactPath("/db",       new BlockingHandler(new DbSqlHandler(db)))
             .addExactPath("/queries",  new BlockingHandler(new QueriesSqlHandler(db)))
@@ -95,11 +100,12 @@ public final class HelloWebServer {
     POSTGRESQL() {
       @Override
       HttpHandler paths(Properties props) {
+        String driverClass = "org.postgresql.Driver";
         String jdbcUrl = props.getProperty("postgresql.jdbcUrl");
         String username = props.getProperty("postgresql.username");
         String password = props.getProperty("postgresql.password");
         int connections = Integer.parseInt(props.getProperty("postgresql.connections"));
-        DataSource db = newSqlDataSource(jdbcUrl, username, password, connections);
+        DataSource db = newSqlDataSource(driverClass, jdbcUrl, username, password, connections);
         return new PathHandler()
             .addExactPath("/db",       new BlockingHandler(new DbSqlHandler(db)))
             .addExactPath("/queries",  new BlockingHandler(new QueriesSqlHandler(db)))
@@ -158,16 +164,27 @@ public final class HelloWebServer {
     /**
      * Provides a source of connections to a SQL database.
      */
-    static DataSource newSqlDataSource(String jdbcUrl,
+    static DataSource newSqlDataSource(String driverClass,
+                                       String jdbcUrl,
                                        String username,
                                        String password,
                                        int connections) {
-      HikariConfig config = new HikariConfig();
-      config.setJdbcUrl(jdbcUrl);
-      config.setUsername(username);
-      config.setPassword(password);
-      config.setMaximumPoolSize(connections);
-      return new HikariDataSource(config);
+
+        AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
+                .connectionPoolConfiguration( cp -> cp
+                        .maxSize( connections )
+                        .connectionFactoryConfiguration( cf -> cf
+                                .driverClassName( driverClass ) // AG-29
+                                .jdbcUrl( jdbcUrl )
+                                .principal( new NamePrincipal( username ) )
+                                .credential( new SimplePassword( password ) )
+                        )
+                );
+        try {
+            return AgroalDataSource.from( configuration );
+        } catch ( SQLException e ) {
+            throw new IllegalArgumentException( e );
+        }
     }
 
     /**
